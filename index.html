@@ -5,41 +5,100 @@
     <title>Test Flou Gaussien</title>
     <style>
         body {
-            font-family: sans-serif;
-            margin: 20px;
+            font-family: "Inter", sans-serif;
+            margin: 0;
+            padding: 40px;
+            background: #f5f7fa;
+            color: #222;
         }
-        canvas {
-            border: 1px solid #444;
+
+        h2, h3 {
+            font-weight: 600;
+            color: #111;
+        }
+
+        .conteneur {
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 15px;
+            font-size: 15px;
+        }
+
+        input[type="file"],
+        input[type="number"] {
+            margin-top: 8px;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            background: #fff;
+        }
+
+        button {
             margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 15px;
+            border: none;
+            border-radius: 10px;
+            background: #3b82f6;
+            color: white;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #2563eb;
+        }
+
+        canvas {
+            border-radius: 12px;
+            border: 1px solid #ddd;
+            margin-top: 10px;
+            max-width: 100%;
+        }
+
+        .bloc-canvas {
+            margin-top: 30px;
+            background: #fafafa;
+            padding: 20px;
+            border-radius: 14px;
+            border: 1px solid #eee;
         }
     </style>
 </head>
 <body>
+<div class="conteneur">
+    <h2>Test du flou gaussien</h2>
 
-<h2>Test du flou gaussien</h2>
+    <label>Choisir une image JPEG :
+        <input type="file" id="fichier" accept="image/jpeg">
+    </label>
 
-<label>Choisir une image JPEG :
-    <input type="file" id="fichier" accept="image/jpeg">
-</label>
-<br><br>
+    <label>Rayon du flou :
+        <input type="number" id="rayon" value="5" min="1">
+    </label>
 
-<label>Rayon du flou :
-    <input type="number" id="rayon" value="5" min="1">
-</label>
-<br><br>
+    <button id="bouton">Appliquer le flou</button>
 
-<button id="bouton">Appliquer le flou</button>
+    <div class="bloc-canvas">
+        <h3>Image originale</h3>
+        <canvas id="original"></canvas>
+    </div>
 
-<h3>Image originale</h3>
-<canvas id="original"></canvas>
-
-<h3>Image floutée</h3>
-<canvas id="resultat"></canvas>
+    <div class="bloc-canvas">
+        <h3>Image floutée</h3>
+        <canvas id="resultat"></canvas>
+    </div>
+</div>
 
 <script>
-// ---------------------------------------------
-// Génération du noyau gaussien
-// ---------------------------------------------
 function genererNoyauGaussien(rayon) {
     const taille = rayon * 2 + 1;
     const noyau = Array.from({ length: taille }, () => Array(taille).fill(0));
@@ -65,9 +124,6 @@ function genererNoyauGaussien(rayon) {
     return noyau;
 }
 
-// ---------------------------------------------
-// Convolution sur un tableau d'image (Uint8ClampedArray)
-// ---------------------------------------------
 function appliquerConvolution(data, largeur, hauteur, noyau) {
     const resultat = new Uint8ClampedArray(data.length);
 
@@ -105,9 +161,6 @@ function appliquerConvolution(data, largeur, hauteur, noyau) {
     return resultat;
 }
 
-// ---------------------------------------------
-// Chargement et traitement
-// ---------------------------------------------
 const inputFichier = document.getElementById("fichier");
 const bouton = document.getElementById("bouton");
 const canvasOriginal = document.getElementById("original");

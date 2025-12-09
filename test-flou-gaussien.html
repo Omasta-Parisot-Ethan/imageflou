@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Flou Gaussien</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+        canvas {
+            border: 1px solid #444;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Test du flou gaussien</h2>
+
+<label>Choisir une image JPEG :
+    <input type="file" id="fichier" accept="image/jpeg">
+</label>
+<br><br>
+
+<label>Rayon du flou :
+    <input type="number" id="rayon" value="5" min="1">
+</label>
+<br><br>
+
+<button id="bouton">Appliquer le flou</button>
+
+<h3>Image originale</h3>
+<canvas id="original"></canvas>
+
+<h3>Image floutée</h3>
+<canvas id="resultat"></canvas>
+
+<script>
+// ---------------------------------------------
+// Génération du noyau gaussien
+// ---------------------------------------------
+function genererNoyauGaussien(rayon) {
+    const taille = rayon * 2 + 1;
+    const noyau = Array.from({ length: taille }, () => Array(taille).fill(0));
+    const sigma = rayon / 2 || 1;
+    const deuxSigmaCarre = 2 * sigma * sigma;
+
+    let somme = 0;
+
+    for (let y = -rayon; y <= rayon; y++) {
+        for (let x = -rayon; x <= rayon; x++) {
+            const valeur = Math.exp(-(x*x + y*y) / deuxSigmaCarre);
+            noyau[y + rayon][x + rayon] = valeur;
+            somme += valeur;
+        }
+    }
+
+    for (let y = 0; y < taille; y++) {
+        for (let x = 0; x < taille; x++) {
+            noyau[y][x] /= somme;
+        }
+    }
+
+    return noyau;
+}
+
+// ---------------------------------------------
+// Convolution sur un tableau d'image (Uint8ClampedArray)
+// ---------------------------------------------
+function appliquerConvolution(data, largeur, hauteur, noyau) {
+    const resultat = new Uint8ClampedArray(data.length);
+
+    const taille = noyau.length;
+    const rayon = (taille - 1) / 2;
+
+    for (let y = 0; y < hauteur; y++) {
+        for (let x = 0; x < largeur; x++) {
+
+            let r = 0, g = 0, b = 0;
+
+            for (let j = -rayon; j <= rayon; j++) {
+                for (let i = -rayon; i <= rayon; i++) {
+
+                    const px = Math.min(Math.max(x + i, 0), largeur - 1);
+                    const py = Math.min(Math.max(y + j, 0), hauteur - 1);
+
+                    const index = (py * largeur + px) * 4;
+                    const coeff = noyau[j + rayon][i + rayon];
+
+                    r += data[index]     * coeff;
+                    g += data[index + 1] * coeff;
+                    b += data[index + 2] * coeff;
+                }
+            }
+
+            const idx = (y * largeur + x) * 4;
+            resultat[idx]     = r;
+            resultat[idx + 1] = g;
+            resultat[idx + 2] = b;
+            resultat[idx + 3] = 255;
+        }
+    }
+
+    return resultat;
+}
+
+// ---------------------------------------------
+// Chargement et traitement
+// ---------------------------------------------
+const inputFichier = document.getElementById("fichier");
+const bouton = document.getElementById("bouton");
+const canvasOriginal = document.getElementById("original");
+const canvasResultat = document.getElementById("resultat");
+
+let imageChargee = null;
+
+inputFichier.addEventListener("change", e => {
+    const fichier = e.target.files[0];
+    if (!fichier) return;
+
+    const img = new Image();
+    img.onload = () => {
+        canvasOriginal.width = img.width;
+        canvasOriginal.height = img.height;
+
+        const ctx = canvasOriginal.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+
+        imageChargee = img;
+    };
+    img.src = URL.createObjectURL(fichier);
+});
+
+bouton.addEventListener("click", () => {
+    if (!imageChargee) {
+        alert("Charge d'abord une image JPEG.");
+        return;
+    }
+
+    const rayon = parseInt(document.getElementById("rayon").value);
+    if (rayon < 1) {
+        alert("Le rayon doit être >= 1.");
+        return;
+    }
+
+    const largeur = imageChargee.width;
+    const hauteur = imageChargee.height;
+
+    canvasResultat.width = largeur;
+    canvasResultat.height = hauteur;
+
+    const ctxOrig = canvasOriginal.getContext("2d");
+    const ctxRes = canvasResultat.getContext("2d");
+
+    const imgData = ctxOrig.getImageData(0, 0, largeur, hauteur);
+
+    const noyau = genererNoyauGaussien(rayon);
+
+    const pixelsFlous = appliquerConvolution(imgData.data, largeur, hauteur, noyau);
+
+    const imgDataRes = new ImageData(pixelsFlous, largeur, hauteur);
+    ctxRes.putImageData(imgDataRes, 0, 0);
+});
+</script>
+
+</body>
+</html>
